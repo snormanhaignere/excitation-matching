@@ -1,0 +1,3 @@
+This code allows you to match the average excitation pattern between two sets of stimuli. The excitation pattern is computed using a Gammatone filter bank, whose properties have been chosen to coarsely mimic the properties of cochlear filtering. Matching the excitation pattern between stimuli can be experimentally useful for avoiding confounds in neural responses due to differences in frequency content between stimulus sets.
+
+See example_excitation_matching.m for an example of how to use this code. 
