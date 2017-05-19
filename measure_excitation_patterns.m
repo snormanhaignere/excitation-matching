@@ -76,26 +76,42 @@ for i = 1:length(stimulus_sets)
         end
         
         % compute cochleogram, saving results
-        MAT_file = [input_directory '/' fname '_cochleogram.mat'];
-        if ~exist(MAT_file, 'file') || I.overwrite
+        MAT_file_coch = [input_directory '/' fname '_cochleogram.mat'];
+        if ~exist(MAT_file_coch, 'file') || I.overwrite
+            coch_computed = true;
             [coch, P, R] = wav2coch_wrapper(wav, P);
-            save(MAT_file, 'coch', 'P', 'R');
+            save(MAT_file_coch, 'coch', 'P', 'R');
         else
-            load(MAT_file, 'coch', 'P', 'R');
+            coch_computed = false;
         end
+        
+        % average cochleogram across time to compute excitation, save results
+        MAT_file_excitation = [input_directory '/' fname '_excitation.mat'];
+        if ~exist(MAT_file_excitation, 'file') || I.overwrite
+            if ~coch_computed
+                load(MAT_file_coch, 'coch', 'P', 'R');
+            end
+            excitation_pattern = mean(coch);
+            save(MAT_file_excitation, 'excitation_pattern', 'P');
+        else
+            load(MAT_file_excitation, 'excitation_pattern', 'P');
+        end
+        clear coch;
         
         % average across time (after initializing)
         if j == 1
             excitation_patterns_all_stimuli{i} = ...
-                nan(size(coch,2), length(stimulus_sets{i}));
+                nan(length(excitation_pattern), length(stimulus_sets{i}));
         end
-        excitation_patterns_all_stimuli{i}(:,j) = mean(coch);
+        excitation_patterns_all_stimuli{i}(:,j) = excitation_pattern;
+        clear excitation_pattern;
         
     end
     
     % averate across stimuli (after initializing)
     if i == 1
-        excitation_pattern_set_average = nan(size(coch,2), length(stimulus_sets));
+        excitation_pattern_set_average = ...
+            nan(size(excitation_patterns_all_stimuli{i},1), length(stimulus_sets));
     end
     excitation_pattern_set_average(:,i) = mean(excitation_patterns_all_stimuli{i},2);
     
@@ -110,10 +126,11 @@ if I.plot_figures
     names = cell(1, length(stimulus_sets));
     h = nan(1, length(stimulus_sets));
     for i = 1:length(stimulus_sets)
+        ci = mod(i-1, size(cmap,1))+1;
         plot(excitation_patterns_all_stimuli{i}, ...
-            'Color', cmap(i,:), 'LineWidth', 0.25); %#ok<NODEF>
+            'Color', cmap(ci,:), 'LineWidth', 0.25); %#ok<NODEF>
         h(i) = plot(excitation_pattern_set_average(:,i), ...
-            'Color', cmap(i,:), 'LineWidth', 5);
+            'Color', cmap(ci,:), 'LineWidth', 5);
         names{i} = sprintf('set %d', i);
     end
     
