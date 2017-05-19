@@ -1,4 +1,4 @@
-function run_excitation_matching(stimulus_sets, input_directory, P, varargin)
+function stimulus_sets_matched = run_excitation_matching(stimulus_sets, input_directory, P, varargin)
 
 % Top-level script for performing excitation matching. Computes cochleograms
 % for multiple sets of stimuli and alters the stimuli so that the excitation
@@ -19,6 +19,8 @@ function run_excitation_matching(stimulus_sets, input_directory, P, varargin)
 % as key-value pairs. For example: .
 % 
 % run_excitation_matching(stimulus_sets, P, 'target_stimulus_set', 1)
+% 
+% Function returns a new stimulus set with the names of the matched stimuli
 % 
 % See example_excitation_matching.m for example use.
 % 
@@ -65,7 +67,7 @@ stimulus_sets_matched = synthesize_matched_stimuli(...
     stimulus_sets, excitation_pattern_average, input_directory, ...
     'n_iter', I.n_iter, ...
     'target_stimulus_set', I.target_stimulus_set, ...
-    'plot_figures', I.plot_figures);
+    'plot_figures', I.plot_figures, 'overwrite', I.overwrite);
 
 %% Re-compute cochleograms for the matched stimuli
 
@@ -74,4 +76,4 @@ fprintf('\n\n-- Analyzing excitation-matched cochleograms ---\n\n\n');
 figure_name = ['excitation-patterns-matched' ...
     '_targ' num2str(I.target_stimulus_set) '_niter' num2str(I.n_iter)];
 measure_excitation_patterns(stimulus_sets_matched, input_directory, P, ...
-    'figure_name', figure_name, 'overwrite', true);
+    'figure_name', figure_name, 'overwrite', I.overwrite);
