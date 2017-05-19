@@ -36,6 +36,9 @@ I.n_iter = 1;
 % can be a useful check that the code is working
 I.synthesize_target_stimulus_set = true;
 
+% whether or not over-write / recompute saved analyses
+I.overwrite = false;
+
 % overwrite with specified inputs
 I = parse_optInputs_keyvalue(varargin, I);
 
@@ -61,18 +64,28 @@ for i = 1:length(stimulus_sets)
     stimulus_sets_matched{i} = cell(size(stimulus_sets{i}));
     for j = 1:length(stimulus_sets{i})
         
-        % optionally skip if the stimulus set is the target, in which case no
-        % change is needed
-        if i == I.target_stimulus_set && ~I.synthesize_target_stimulus_set
-            stimulus_sets_matched{i}{j} = stimulus_sets{i}{j};
-            continue;
-        end
-        
         % remove extension
         [~, fname, ~] = fileparts(stimulus_sets{i}{j});
         
         % display current stimulus
         fprintf('%d, %d: %s\n', i, j, fname);
+        
+        % optionally skip if the stimulus set is the target, in which case no
+        % change is needed
+        if i == I.target_stimulus_set && ~I.synthesize_target_stimulus_set
+            stimulus_sets_matched{i}{j} = stimulus_sets{i}{j};
+            continue;
+        else
+            stimulus_sets_matched{i}{j} = [fname '_matched' ...
+                '_targ' num2str(I.target_stimulus_set) ...
+                '_niter' num2str(I.n_iter) '.wav'];
+        end
+        
+        % skip if already completed
+        matched_audio_file = [input_directory '/' stimulus_sets_matched{i}{j}];
+        if exist(matched_audio_file, 'file') && ~I.overwrite
+            continue;
+        end
         
         % load the previously computed cochleogram
         % see measure_cochleograms
@@ -93,11 +106,7 @@ for i = 1:length(stimulus_sets)
         end
         
         % write waveform
-        stimulus_sets_matched{i}{j} = [fname '_matched' ...
-            '_targ' num2str(I.target_stimulus_set) ...
-            '_niter' num2str(I.n_iter) '.wav'];
-        audiowrite([input_directory '/' stimulus_sets_matched{i}{j}], ...
-            recon_wav, P.audio_sr); 
+        audiowrite(matched_audio_file, recon_wav, P.audio_sr); 
         
         % plot figures showing the various cochleograms computed
         if I.plot_figures
@@ -135,13 +144,13 @@ for i = 1:length(stimulus_sets)
 end
 
 % plot correlation metric
-if I.plot_figures
+r_all = cat(2, r{:});
+if I.plot_figures && all(~isnan(r_all(:)))
     
     % plot
     figure;
     set(gcf, 'Position', [200 200 500 500]);
     hold on;
-    r_all = cat(2, r{:});
     plot(1:I.n_iter, r_all.^2, '-o', 'LineWidth', 0.5);
     plot(1:I.n_iter, mean(r_all.^2,2), 'k-o', 'LineWidth', 5);
     
